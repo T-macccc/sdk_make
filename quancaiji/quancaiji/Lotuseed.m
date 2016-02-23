@@ -8,10 +8,68 @@
 
 #import "Lotuseed.h"
 
+#import "ViewController.h"
+
 #define VERSION @"1.0.0"
 
 
 @implementation Lotuseed
+
+- (instancetype)init{
+    if (self = [super init]) {
+        _addTargetArray = [NSMutableArray array];
+    }
+    return self;
+}
+
+//添加动作
+//- (void)buttonInvoke{
+//    if ([Lotuseed sharedInstance].lotuseed == nil) {
+//        NSLog(@"something nil");
+//    }
+//    [[Lotuseed sharedInstance].lotuseed track:@"UIButton" properties:@{
+//                                                                       @"Button1":@"Button0"
+//                                                                       }];
+//    
+//}
+
+- (void)severalGetobj:(NSObject *)obj id:(id)something{
+    NSArray *array = [NSArray array];
+    array = [self getChildObj:obj id:something];
+    if (array.count != 0) {
+        [_addTargetArray addObject:array];
+        NSLog(@"%@",array);
+    }
+    if (array != nil) {
+        for (int i = 0; i<array.count; i++) {
+            [self severalGetobj:array[i] id:something];
+        }
+    }
+}
+
+- (NSArray *)getChildObj:(NSObject *)obj id:(id)something{
+    NSMutableArray *children = [NSMutableArray array];
+    if ([obj isKindOfClass:[UIViewController class]]) {
+        UIViewController *viewController = (UIViewController *)obj;
+        if ([viewController childViewControllers]) {
+            [children addObjectsFromArray:[viewController childViewControllers]];
+        }
+        if (viewController.presentedViewController) {
+            [children addObject:viewController.presentedViewController];
+        }if (viewController.isViewLoaded) {
+            [children addObject:viewController.view];
+        }
+    }
+    else if ([obj isKindOfClass:[UIButton class]]){
+        ViewController *VC = [[ViewController alloc]init];
+        [(UIButton *)obj addTarget:something   action:@selector(buttonInvoke) forControlEvents:UIControlEventTouchUpInside];
+    }
+    else if ([obj isKindOfClass:[UIView class]]){
+        [children addObjectsFromArray:[(UIView *)obj subviews]];
+    }
+    return children;
+}
+
 
 static Lotuseed *sharedInstance = nil;
 
@@ -30,6 +88,8 @@ static Lotuseed *sharedInstance = nil;
         self.automaticProperties = [self collectProperties];
         self.distinctId = [self defaultDistinctId];
         
+        NSString *label = [NSString stringWithFormat:@"com.lotuseed.%@.%p",apiToken,self];
+        self.serialQueue = dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_SERIAL);
         self.dateFormatter = [[NSDateFormatter alloc]init];
         [_dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
         [_dateFormatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
@@ -53,6 +113,7 @@ static Lotuseed *sharedInstance = nil;
 
 + (Lotuseed *)sharedInstance{
     if (sharedInstance == nil) {
+        [self new];
         NSLog(@"warning sharedInstance called before sharedInstanceWithToken:");
     }
     return sharedInstance;
@@ -172,27 +233,52 @@ static Lotuseed *sharedInstance = nil;
     }
 }
 
-//- (void)track:(NSString *)event properties:(NSDictionary *)properties{
-//    if (event == nil || [event length] == 0) {
-//        NSLog(@"%@ lotuseed track called with empty event parametr. using 'mp_event'",self);
-//        event = @"mp_event";
-//    }
-//    properties = [properties copy];
-//    [Lotuseed assertPropertyTypes:properties];
-//    
-//    double timeInterval = [[NSDate date] timeIntervalSince1970];
-//    NSNumber *timeSeconds = @(round(timeInterval));
+- (void)track:(NSString *)event properties:(NSDictionary *)properties{
+    if (event == nil || [event length] == 0) {
+        NSLog(@"%@ lotuseed track called with empty event parametr. using 'mp_event'",self);
+        event = @"mp_event";
+    }
+    properties = [properties copy];
+    [Lotuseed assertPropertyTypes:properties];
+    
+    double timeInterval = [[NSDate date] timeIntervalSince1970];
+    NSNumber *timeSeconds = @(round(timeInterval));//时间戳取整
 //    dispatch_async(self.serialQueue, ^{
-//        NSNumber *eventStartTime = self.timeEvents[event];
-//        NSMutableDictionary *p = [NSMutableDictionary dictionary];
-//        [p addEntriesFromDictionary:self.automaticProperties];
-//        p[@"token"] = self.apiToken;
-//        p[@"time"] = timeSeconds;
-//        if (eventStartTime) {
-//            [self.timeEvents removeObjectForKey:event];
-//        }
+        NSNumber *eventStartTime = self.timeEvents[event];
+        NSMutableDictionary *p = [NSMutableDictionary dictionary];
+        [p addEntriesFromDictionary:self.automaticProperties];
+        p[@"token"] = self.apiToken;
+        p[@"time"] = timeSeconds;
+        if (eventStartTime) {//?
+            [self.timeEvents removeObjectForKey:event];
+            p[@"$duration"] = @([[NSString stringWithFormat:@"%.3f",timeInterval-[eventStartTime doubleValue]] floatValue]);
+        }
+        if (self.nameTag) {
+            p[@"name_tag"] = self.nameTag;
+        }
+        if (self.distinctId) {
+            p[@"distinctId"] = self.distinctId;
+        }
+        [p addEntriesFromDictionary:self.automaticProperties];
+        if (properties) {
+            [p addEntriesFromDictionary:properties];
+        }
+        NSDictionary *e = @{
+                            @"event":event,
+                            @"properties":[NSDictionary dictionaryWithDictionary:p]
+                            };
+        [self.eventQueue addObject:e];
+//        if ([self.eventQueue count] > 500) {
+//            [self.eventQueue removeObjectAtIndex:0];
+//        }//??
+        if ([Lotuseed inBackground]) {
+            [self archiveEvents];
+        }
 //    });
-//}
+//    flush
+    
+    NSLog(@"is tracking :%@",e);
+}
 
 + (BOOL)inBackground{
 #if !defined(MIXPANEL_APP_EXTENSION)
@@ -208,6 +294,14 @@ static Lotuseed *sharedInstance = nil;
     NSMutableArray *peopleQueueCopy = [NSMutableArray arrayWithArray:[self.peopleQueue copy]];//self.peopleQueue为_unidentifierQueue
     if (![NSKeyedArchiver archiveRootObject:peopleQueueCopy toFile:filePath]) {
         NSLog(@"%@ unable to archive people data",self);
+    }
+}
+
+- (void)archiveEvents{
+    NSString *filePath = [self eventsFilePath];
+    NSMutableArray *eventQueueCopy = [NSMutableArray arrayWithArray:[self.eventQueue copy]];
+    if (![NSKeyedArchiver archiveRootObject:eventQueueCopy toFile:filePath]) {
+        NSLog(@"%@ unable to archive events data",self);
     }
 }
 
@@ -232,6 +326,10 @@ static Lotuseed *sharedInstance = nil;
 
 - (NSString *)peopleFilePath{
     return [self filePathForData:@"people"];
+}
+
+- (NSString *)eventsFilePath{
+    return [self filePathForData:@"events"];
 }
 
 - (NSString *)propertiesFilePath{

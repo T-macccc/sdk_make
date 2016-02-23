@@ -15,6 +15,7 @@
 @property (nonatomic, strong)NSArray *views;
 @property (nonatomic, strong)NSMutableArray *viewArray;
 
-- (NSArray *)getChildrenOfObject:(NSObject *)obj ofType:(Class)class;
+
 - (void)severalGetChild:(NSObject *)obj ofType:(Class)class;
+- (NSArray *)getChildrenOfObject:(NSObject *)obj ofType:(Class)class;
 @end
