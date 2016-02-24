@@ -9,9 +9,9 @@
 #import "Lotuseed.h"
 
 #import "ViewController.h"
+#import "Lotuseed.h"
 
 #define VERSION @"1.0.0"
-
 
 @implementation Lotuseed
 
@@ -22,16 +22,16 @@
     return self;
 }
 
-//添加动作
-//- (void)buttonInvoke{
-//    if ([Lotuseed sharedInstance].lotuseed == nil) {
-//        NSLog(@"something nil");
-//    }
-//    [[Lotuseed sharedInstance].lotuseed track:@"UIButton" properties:@{
-//                                                                       @"Button1":@"Button0"
-//                                                                       }];
-//    
-//}
+//添加监控
+- (void)buttonInvoke{
+    if ([Lotuseed sharedInstance] == nil) {
+        NSLog(@"单例为空");
+    }
+    [[Lotuseed sharedInstance] track:@"UIButton" properties:@{
+                                                              @"Button1":@"Button0"
+                                                              }];
+    
+}
 
 - (void)severalGetobj:(NSObject *)obj id:(id)something{
     NSArray *array = [NSArray array];
@@ -61,19 +61,35 @@
         }
     }
     else if ([obj isKindOfClass:[UIButton class]]){
-        ViewController *VC = [[ViewController alloc]init];
-        [(UIButton *)obj addTarget:something   action:@selector(buttonInvoke) forControlEvents:UIControlEventTouchUpInside];
+        
+        [(UIButton *)obj addTarget:[Lotuseed sharedInstance]  action:@selector(buttonInvoke) forControlEvents:UIControlEventTouchUpInside];
+        
     }
     else if ([obj isKindOfClass:[UIView class]]){
+    
         [children addObjectsFromArray:[(UIView *)obj subviews]];
     }
     return children;
 }
 
+//初始化,重置
+
+- (void)reset{
+dispatch_async(self.serialQueue, ^{
+    self.distinctId = [self defaultDistinctId];
+    self.automaticProperty = [NSMutableDictionary dictionary];
+    self.people.distinctId = nil;
+    self.people.unidentifiedQueue = [NSMutableArray array];
+    self.eventQueue = [NSMutableArray array];
+    self.peopleQueue = [NSMutableArray array];
+    self.timeEvent = [NSMutableDictionary dictionary];
+    
+    
+});
+}
 
 static Lotuseed *sharedInstance = nil;
 
-//初始化
 - (instancetype)initWithToken:(NSString *)apiToken launchOptions:(NSDictionary *)launchOptions andFlushInterval:(NSUInteger)flushInterval{
     if (apiToken == nil) {
         apiToken = @"";
@@ -85,9 +101,10 @@ static Lotuseed *sharedInstance = nil;
         self.people = [[LotuseedPeople alloc]initWithLotuseed:self];
         self.apiToken = apiToken;
         
-        self.automaticProperties = [self collectProperties];
+        self.automaticProperty = [self collectProperties];
         self.distinctId = [self defaultDistinctId];
         
+        self.timeEvent = [NSMutableDictionary dictionary];
         NSString *label = [NSString stringWithFormat:@"com.lotuseed.%@.%p",apiToken,self];
         self.serialQueue = dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_SERIAL);
         self.dateFormatter = [[NSDateFormatter alloc]init];
@@ -244,13 +261,13 @@ static Lotuseed *sharedInstance = nil;
     double timeInterval = [[NSDate date] timeIntervalSince1970];
     NSNumber *timeSeconds = @(round(timeInterval));//时间戳取整
 //    dispatch_async(self.serialQueue, ^{
-        NSNumber *eventStartTime = self.timeEvents[event];
+        NSNumber *eventStartTime = self.timeEvent[event];
         NSMutableDictionary *p = [NSMutableDictionary dictionary];
-        [p addEntriesFromDictionary:self.automaticProperties];
+        [p addEntriesFromDictionary:self.automaticProperty];
         p[@"token"] = self.apiToken;
         p[@"time"] = timeSeconds;
         if (eventStartTime) {//?
-            [self.timeEvents removeObjectForKey:event];
+            [self.timeEvent removeObjectForKey:event];
             p[@"$duration"] = @([[NSString stringWithFormat:@"%.3f",timeInterval-[eventStartTime doubleValue]] floatValue]);
         }
         if (self.nameTag) {
@@ -259,7 +276,7 @@ static Lotuseed *sharedInstance = nil;
         if (self.distinctId) {
             p[@"distinctId"] = self.distinctId;
         }
-        [p addEntriesFromDictionary:self.automaticProperties];
+        [p addEntriesFromDictionary:self.automaticProperty];
         if (properties) {
             [p addEntriesFromDictionary:properties];
         }
@@ -289,6 +306,15 @@ static Lotuseed *sharedInstance = nil;
 }
 
 //归档
+
+- (void)archive{
+    [self archivePeople];
+    [self archiveEvents];
+    [self archiveProperties];
+    [self archiveVariants];
+    [self archiveEventBindings];
+}
+
 - (void)archivePeople{
     NSString *filePath = [self peopleFilePath];
     NSMutableArray *peopleQueueCopy = [NSMutableArray arrayWithArray:[self.peopleQueue copy]];//self.peopleQueue为_unidentifierQueue
@@ -309,13 +335,97 @@ static Lotuseed *sharedInstance = nil;
     NSString *filePath = [self propertiesFilePath];
     NSMutableDictionary *p = [NSMutableDictionary dictionary];
     [p setValue:self.distinctId forKey:@"distinctId"];
-    [p setValue:self.automaticProperties forKey:@"autoProperties"];
+    [p setValue:self.automaticProperty forKey:@"autoProperty"];
     [p setValue:self.people.distinctId forKey:@"peopleDistinctId"];
     [p setValue:self.people.unidentifiedQueue forKey:@"peopleUnidentifierQueue"];
     
     if (![NSKeyedArchiver archiveRootObject:p toFile:filePath]) {
         NSLog(@"%@ unable to archive properties data",self);
     }
+}
+
+- (void)archiveVariants{
+    NSString *filePath = [self variantsFilePath];
+    if (![NSKeyedArchiver archiveRootObject:self.variant toFile:filePath]) {
+        NSLog(@"%@ unable to archive variant data",self);
+    }
+}
+
+- (void)archiveEventBindings{
+    NSString *filePath = [self variantsFilePath];
+    if (![NSKeyedArchiver archiveRootObject:self.eventBinding toFile:filePath]) {
+        NSLog(@"%@ unable to archive eventBinding data",self);
+    }
+}
+
+
+//解归档
+- (id)unarchiveFromFile:(NSString *)filePath{
+    id unarchiveData = nil;
+    @try {
+        unarchiveData = [NSKeyedUnarchiver unarchiveObjectWithFile:filePath];
+    }
+    @catch (NSException *exception) {
+        unarchiveData = nil;
+        NSLog(@"%@ unable to unarchive data in %@",self,filePath);
+    }
+    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        NSError *error;
+        BOOL removed = [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
+        if (!removed) {
+            NSLog(@"%@ unable to remove archived file at %@-%@",self,filePath,error);
+        }
+    }
+    return unarchiveData;
+}
+
+- (void)unarchiveEvent{
+    self.eventQueue = (NSMutableArray *)[self unarchiveFromFile:[self eventsFilePath]];
+    if (!self.eventQueue) {
+        self.eventQueue = [NSMutableArray array];
+    }
+}
+
+- (void)unarchiveEventBinding{
+    self.eventBinding = (NSSet *)[self unarchiveFromFile:[self eventBindingFilePath]];
+    if (!self.eventBinding) {
+        self.eventBinding = [NSSet set];
+    }
+}
+
+- (void)unarchiveVariant{
+    self.variant = (NSSet *)[self unarchiveFromFile:[self variantsFilePath]];
+    if (!self.variant) {
+        self.variant = [NSSet set];
+    }
+}
+
+- (void)unarchivePeople{
+    self.peopleQueue = (NSMutableArray *)[self unarchiveFromFile:[self peopleFilePath]];
+    if (!self.peopleQueue) {
+        self.peopleQueue = [NSMutableArray array];
+    }
+}
+
+- (void)unarchiveProperties{
+    NSDictionary *properties = (NSDictionary *)[self unarchiveFromFile:[self propertiesFilePath]];
+    if (properties) {
+        self.distinctId = properties[@"distinctId"] ? :[self defaultDistinctId];
+        self.automaticProperty = properties[@"autoProperty"] ? : [NSMutableDictionary dictionary];
+        self.people.distinctId = properties[@"peopleDistinctId"];
+        self.people.unidentifiedQueue = properties[@"peopleUnidentifiedQueue"] ? : [NSMutableArray array];
+        self.variant = properties[@"variant"] ? :[NSSet set];
+        self.eventBinding = properties[@"event_Binding"] ? :[NSArray array];
+        self.timeEvent = properties[@"timeEvent"] ? :[NSMutableDictionary dictionary];
+    }
+}
+
+- (void)unarchive{
+    [self unarchiveEvent];
+    [self unarchiveEventBinding];
+    [self unarchivePeople];
+    [self unarchiveProperties];
+    [self unarchiveVariant];
 }
 
 //路径
@@ -335,6 +445,60 @@ static Lotuseed *sharedInstance = nil;
 - (NSString *)propertiesFilePath{
     return [self filePathForData:@"properties"];
 }
+
+- (NSString *)variantsFilePath{
+    return [self filePathForData:@"variants"];
+}
+
+- (NSString *)eventBindingFilePath{
+    return [self filePathForData:@"event_bindings"];
+}
+
+//self.autoProperty的操作
+- (void)registerSuperPropertiesOnce:(NSDictionary *)properties defaultValue:(id)defaultValue{
+    properties = [properties copy];
+    [Lotuseed assertPropertyTypes:properties];
+    dispatch_async(self.serialQueue, ^{
+        NSMutableDictionary *tmp = [NSMutableDictionary dictionaryWithDictionary:self.automaticProperty];
+        for (NSString *key in properties) {
+            id value = tmp[key];
+            if (value == nil || [value isEqual:defaultValue]) {
+                tmp[key] = properties[key];
+            }
+        }
+        self.automaticProperty = [NSDictionary dictionaryWithDictionary:tmp];
+        if ([Lotuseed inBackground]) {
+            [self archiveProperties];
+        }
+    });
+}
+
+- (void)unregisterSuperProperty:(NSString *)propertyName{
+dispatch_async(self.serialQueue, ^{
+    NSMutableDictionary *tmp = [NSMutableDictionary dictionaryWithDictionary:self.automaticProperty];
+    if (tmp[propertyName] != nil) {
+        [tmp removeObjectForKey:propertyName];
+    }
+    self.automaticProperty = [NSDictionary dictionaryWithDictionary:tmp];
+    if ([Lotuseed inBackground]) {
+        [self archiveProperties];
+    }
+});
+}
+
+- (void)clearSuperProperties{
+dispatch_async(self.serialQueue, ^{
+    self.automaticProperty = @{};
+    if ([Lotuseed inBackground]) {
+        [self archiveProperties];
+    }
+});
+}
+
+- (NSDictionary *)currentSuperProperties{
+    return [self.automaticProperty copy];
+}
+
 @end
 //LotuseedPeple
 @implementation LotuseedPeople
@@ -343,7 +507,7 @@ static Lotuseed *sharedInstance = nil;
     if (self = [self init]) {
         self.lotuseed = lotuseed;
         self.unidentifiedQueue = [NSMutableArray array];
-        self.automaticPeopleProperties = [self collectProperties];
+        self.peopleAutoProperty = [self collectProperties];
     }
     return self;
 }

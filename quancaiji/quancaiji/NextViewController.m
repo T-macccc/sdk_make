@@ -9,14 +9,16 @@
 #import "NextViewController.h"
 
 #import "TraverseViewC.h"
+#import "Lotuseed.h"
 
 @interface NextViewController ()<UITableViewDataSource,UITableViewDelegate>
-{
-    UITableView *dataTable;
-    NSMutableArray *dataArray1;
-    NSMutableArray *dataArray2;
-    NSMutableArray *titleArray;
-}
+//{
+//    UITableView *dataTable;
+//    NSMutableArray *dataArray1;
+//    NSMutableArray *dataArray2;
+//    NSMutableArray *titleArray;
+//    NSMutableArray *indexPathArray;
+//}
 @end
 
 @implementation NextViewController
@@ -24,10 +26,10 @@
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{
     switch (section) {
         case 0:
-            return [titleArray objectAtIndex:section];
+            return [_titleArray objectAtIndex:section];
             break;
         case 1:
-            return [titleArray objectAtIndex:section];
+            return [_titleArray objectAtIndex:section];
             break;
             
         default:
@@ -37,22 +39,29 @@
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView{
-    return titleArray.count;
+    return _titleArray.count;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
     switch (section) {
         case 0:
-            return [dataArray1 count];
+            return [_dataArray1 count];
             break;
         case 1:
-            return [dataArray2 count];
+            return [_dataArray2 count];
             break;
             
         default:
             return 0;
             break;
     }
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    [_indexPathArray addObject:indexPath];
+    UITableViewCell *cell = [_dataTable cellForRowAtIndexPath:indexPath];
+    NSLog(@"section:%d,row:%d",indexPath.section,indexPath.row);
+    NSLog(@"cell:%@",cell);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
@@ -63,11 +72,11 @@
     }
     switch (indexPath.section) {
         case 0:
-            [[cell textLabel] setText:[dataArray1 objectAtIndex:indexPath.row]];
+            [[cell textLabel] setText:[_dataArray1 objectAtIndex:indexPath.row]];
             break;
             
         case 1:
-            [[cell textLabel] setText:[dataArray2 objectAtIndex:indexPath.row]];
+            [[cell textLabel] setText:[_dataArray2 objectAtIndex:indexPath.row]];
             break;
             
         default:
@@ -80,15 +89,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    dataTable = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.width)];
+    _dataTable = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.width)];
     
-    [dataTable setDelegate:self];
-    [dataTable setDataSource:self];
-    [self.view addSubview:dataTable];
+    [_dataTable setDelegate:self];
+    [_dataTable setDataSource:self];
+    [self.view addSubview:_dataTable];
 
-    dataArray1 = [[NSMutableArray alloc]initWithObjects:@"China",@"American",@"English", nil];
-    dataArray2 = [[NSMutableArray alloc]initWithObjects:@"Yellow",@"Black",@"White", nil];
-    titleArray = [[NSMutableArray alloc]initWithObjects:@"country",@"race", nil];
+    _dataArray1 = [[NSMutableArray alloc]initWithObjects:@"China",@"American",@"English", nil];
+    _dataArray2 = [[NSMutableArray alloc]initWithObjects:@"Yellow",@"Black",@"White", nil];
+    _titleArray = [[NSMutableArray alloc]initWithObjects:@"country",@"race", nil];
+    _indexPathArray = [[NSMutableArray alloc]init];
     
     self.view.backgroundColor = [UIColor whiteColor];
     
@@ -96,6 +106,10 @@
     
     [traverse severalGetChild:self ofType:nil];
     NSLog(@"child:%@",traverse.viewArray);
+    
+    NSLog(@"rowHeight:%f",_dataTable.estimatedRowHeight);
+    
+    
     // Do any additional setup after loading the view.
 }
 

@@ -26,23 +26,25 @@
 @property (atomic, strong) LotuseedPeople *people;
 @property (atomic, copy) NSString *distinctId;
 @property (nonatomic, copy) NSString *apiToken;
-@property (nonatomic, strong) NSDictionary *automaticProperties;
+@property (nonatomic, strong) NSDictionary *automaticProperty;
 @property (nonatomic, strong) NSDateFormatter *dateFormatter;
 @property (nonatomic, strong) dispatch_queue_t serialQueue;
 @property (nonatomic, strong) NSMutableArray *eventQueue;
 @property (nonatomic, strong) NSMutableArray *peopleQueue;
-@property (nonatomic, strong) NSMutableDictionary *timeEvents;
+@property (nonatomic, strong) NSMutableDictionary *timeEvent;
 @property (atomic, copy) NSString *nameTag;
+
+@property (nonatomic, strong) NSSet *variant;
+@property (nonatomic, strong) NSSet *eventBinding;
 
 @property (nonatomic,strong)NSMutableArray *addTargetArray;
 
-//- (NSDictionary *)collectProperties;
 - (NSString *)peopleFilePath;
 - (instancetype)initWithToken:(NSString *)apiToken launchOptions:(NSDictionary *)launchOptions andFlushInterval:(NSUInteger)flushInterval;
 - (void)track:(NSString *)event properties:(NSDictionary *)properties;
 + (Lotuseed *)sharedInstance;
 - (void)severalGetobj:(NSObject *)obj id:(id)something;
-
++ (Lotuseed *)sharedInstanceWithToken:(NSString *)apiToken;
 @end
 
 @interface LotuseedPeople : NSObject
@@ -50,7 +52,7 @@
 @property (nonatomic, weak) Lotuseed *lotuseed;
 @property (nonatomic, strong) NSMutableArray *unidentifiedQueue;
 @property (nonatomic,copy) NSString *distinctId;
-@property (nonatomic,strong) NSDictionary *automaticPeopleProperties;
+@property (nonatomic,strong) NSDictionary *peopleAutoProperty;
 
 - (instancetype)initWithLotuseed:(Lotuseed *)lotuseed;
 @end

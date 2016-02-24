@@ -8,15 +8,19 @@
 
 #import "AppDelegate.h"
 
+#import "Lotuseed.h"
+
 @interface AppDelegate ()
 
 @end
 
 @implementation AppDelegate
-
+{
+    Lotuseed *lotuseed;
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    
+    lotuseed = [Lotuseed sharedInstanceWithToken:@"apiToken"];
     // Override point for customization after application launch.
     return YES;
 }

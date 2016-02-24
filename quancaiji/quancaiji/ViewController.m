@@ -12,23 +12,12 @@
 #import "NextViewController.h"
 #import "Lotuseed.h"
 
-
 @implementation ViewController
 
-//- (void)turnView{
-//    NextViewController *nextViewController = [[NextViewController alloc]init];
-//    
-//    [self presentModalViewController:nextViewController animated:YES];
-//}
-
-- (void)buttonInvoke{
-    if ([Lotuseed sharedInstance].lotuseed == nil) {
-        NSLog(@"something must nil");
-    }
-    [[Lotuseed sharedInstance].lotuseed track:@"UIButton" properties:@{
-                                                                       @"Button1":@"Button0"
-                                                                       }];
+- (void)turnView{
+    NextViewController *nextViewController = [[NextViewController alloc]init];
     
+    [self presentModalViewController:nextViewController animated:YES];
 }
 
 - (void)viewDidLoad {
@@ -39,8 +28,8 @@
     [turnButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     [self.view addSubview:turnButton];
     turnButton.frame = CGRectMake(100, 100, 100, 50);
-    NSLog(@"before:%@",turnButton);
-//    [turnButton addTarget:self action:@selector(printView) forControlEvents:UIControlEventTouchUpInside];
+    
+//    [turnButton addTarget:self action:@selector(turnView)  forControlEvents:UIControlEventTouchUpInside];
     
     UIView *viewInButton = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 20, 20)];
     viewInButton.backgroundColor = [UIColor yellowColor];
@@ -58,10 +47,8 @@
     
     self.view.backgroundColor = [UIColor cyanColor];
 
-    Lotuseed *lotuseed = [[Lotuseed alloc]initWithToken:@"Token" launchOptions:nil andFlushInterval:0];
-    [lotuseed track:@"test" properties:@{
-                                         @"key":@"value"
-                                         }];
+    Lotuseed *lotuseed = [[Lotuseed alloc]init];
+
 //    
 //    TraverseViewC *traverse = [[TraverseViewC alloc]init];
 //    
@@ -79,23 +66,10 @@
 //    NSLog(@"objects:%@",traverse.viewArray );
 }
 
-- (void)printView{
-    
-    NSLog(@"ViewController");
-    
-//    TraverseViewC *traverse = [[TraverseViewC alloc]init];
-//    
-//    [traverse severalGetChild:self ofType:nil];
-//    NSLog(@"NOW VIEW:%@",traverse.viewArray);
-
-//    [[Lotuseed sharedInstance].lotuseed track:@"testButton" properties:@{
-//                                               @"testKey":@"testValue"
-//                                               }];
-}
-
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
 
 @end
