@@ -17,7 +17,7 @@
 - (void)turnView{
     NextViewController *nextViewController = [[NextViewController alloc]init];
     
-    [self presentModalViewController:nextViewController animated:YES];
+    [self.navigationController pushViewController:nextViewController animated:YES];
 }
 
 - (void)viewDidLoad {
@@ -29,11 +29,12 @@
     [self.view addSubview:turnButton];
     turnButton.frame = CGRectMake(100, 100, 100, 50);
     
-//    [turnButton addTarget:self action:@selector(turnView)  forControlEvents:UIControlEventTouchUpInside];
+//    [turnButton addTarget:self action:@selector(turnView)  forControlEvents:UIControlEventTouchUpInside];//nav
     
     UIView *viewInButton = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 20, 20)];
     viewInButton.backgroundColor = [UIColor yellowColor];
     [turnButton addSubview:viewInButton];
+    [turnButton addTarget:self action:@selector(turnView) forControlEvents:UIControlEventTouchUpInside];
     
     UITextField *textField = [[UITextField alloc]initWithFrame:CGRectMake(100, 200, 100, 50)];
     [self.view addSubview:textField];
@@ -46,6 +47,11 @@
     textField.text = @"default";
     
     self.view.backgroundColor = [UIColor cyanColor];
+    
+    
+//    UIBarButtonItem *leftButton = [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemRewind target:self action:@selector(turnView)];
+//    self.navigationItem.leftBarButtonItem = leftButton;//nav
+    
 
     Lotuseed *lotuseed = [[Lotuseed alloc]init];
 
