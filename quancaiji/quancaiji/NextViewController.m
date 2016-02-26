@@ -10,6 +10,7 @@
 
 #import "TraverseViewC.h"
 #import "Lotuseed.h"
+#import "LotuseedCell.h"
 
 @interface NextViewController ()<UITableViewDataSource,UITableViewDelegate>
 //{
@@ -59,9 +60,10 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     [_indexPathArray addObject:indexPath];
-    UITableViewCell *cell = [_dataTable cellForRowAtIndexPath:indexPath];
-    NSLog(@"section:%d,row:%d",indexPath.section,indexPath.row);
-    NSLog(@"cell:%@",cell);
+                                               
+//    TraverseViewC *tra = [[TraverseViewC alloc]init];
+//    [tra handleTableView:self];
+    
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
@@ -109,7 +111,8 @@
     
     NSLog(@"rowHeight:%f",_dataTable.estimatedRowHeight);
     
-    
+    Lotuseed *lotuseed = [Lotuseed new];
+    [lotuseed severalGetobj:self id:nil];
     // Do any additional setup after loading the view.
 }
 
@@ -118,14 +121,15 @@
     // Dispose of any resources that can be recreated.
 }
 
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+    
+//    TraverseViewC *tra = [TraverseViewC new];
+//    [tra handleTableViewWithTableView:self.dataTable indexArray:self.indexPathArray];
+    
+//    NSSet *allTouches = [event allTouches];
+//    UITouch *touch = [allTouches anyObject];
+//    CGPoint point = [touch locationInView:[[touch view] superview]];
+//    NSLog(@"point:%f,%f",point.x,point.y);
 }
-*/
 
 @end

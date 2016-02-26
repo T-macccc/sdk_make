@@ -18,4 +18,6 @@
 
 - (void)severalGetChild:(NSObject *)obj ofType:(Class)class;
 - (NSArray *)getChildrenOfObject:(NSObject *)obj ofType:(Class)class;
+- (void)handleTableView:(NSObject *)obj;
+- (void)handleTableViewWithTableView:(id)objTableView indexArray:(NSArray *)indexArray;
 @end

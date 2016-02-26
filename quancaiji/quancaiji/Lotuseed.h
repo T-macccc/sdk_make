@@ -13,6 +13,8 @@
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <UIKit/UIKit.h>
+#import <sys/types.h>
+
 
 #import "Lotuseed.h"
 
@@ -33,6 +35,7 @@
 @property (nonatomic, strong) NSMutableArray *peopleQueue;
 @property (nonatomic, strong) NSMutableDictionary *timeEvent;
 @property (atomic, copy) NSString *nameTag;
+@property (nonatomic, strong) NSString *model;
 
 @property (nonatomic, strong) NSSet *variant;
 @property (nonatomic, strong) NSSet *eventBinding;
